@@ -1,18 +1,34 @@
-import { NextRequest, NextResponse } from 'next/server';
+// app/api/stock/route.ts
+
+import { NextResponse } from 'next/server';
 import { connectDB } from '@/connectDB/connectDB';
 import { Stock } from '@/models/stockModel';
-import Product from '@/models/productModel'; // Optional: to populate product info
 
-// ✅ GET all stock entries
-export async function GET() {
+export async function GET(req: Request) {
   try {
     await connectDB();
-    const stocks = await Stock.find().populate('product', 'thickness height color party');
-    return NextResponse.json(stocks);
-  } catch (error) {
-    return NextResponse.json({ message: 'Failed to fetch stocks' }, { status: 500 });
+    const { searchParams } = new URL(req.url);
+    const page = Number(searchParams.get('page') ?? '1');
+    const limit = Number(searchParams.get('limit') ?? '10');
+    const q = (searchParams.get('q') ?? '').trim();
+    const skip = (page - 1) * limit;
+    
+    const filter: any = {};
+    if (q) filter['productDetails'] = { $regex: q, $options: 'i' };
+    
+    const total = await Stock.countDocuments(filter);
+    const items = await Stock.find(filter)
+      .populate('product', 'thickness height color')
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+    
+    return NextResponse.json({ items, total, page, limit });
+  } catch (err) {
+    return NextResponse.json({ message: 'Error fetching stocks' }, { status: 500 });
   }
 }
+
 
 // ✅ POST: Add a stock manually
 export async function POST(req: NextRequest) {
@@ -87,7 +103,7 @@ export async function DELETE(req: NextRequest) {
 export async function PUT() {
   try {
     await connectDB();
-    await Stock.updateMany({}, { $set: { quantity: 0 } });
+    await Stock.updateMany({}, { $set: {initialQuantity:0,quantity: 0 } });
     return NextResponse.json({ message: 'All stock quantities reset to 0' });
   } catch (error) {
     return NextResponse.json({ message: 'Failed to reset stock' }, { status: 500 });

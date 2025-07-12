@@ -8,9 +8,11 @@ export type Stock = {
   lastUpdated: string;
 };
 
-export async function fetchStocks(): Promise<Stock[]> {
-  const res = await fetch("/api/stock", { cache: "no-store" });
-  if (!res.ok) throw new Error("Failed to fetch stocks");
+export async function fetchStocks({ page = 1, q = "" }) {
+  const params = new URLSearchParams({ page: page + "", limit: "10" });
+  if (q.trim()) params.set("q", q.trim());
+  const res = await fetch(`/api/stock?${params}`, { cache: "no-store" });
+  if (!res.ok) throw new Error("Error fetching stocks");
   return res.json();
 }
 
@@ -28,7 +30,7 @@ export async function addStock(stockData: {
   return res.json();
 }
 
-export async function updateStock(stockId: string, quantity: number, initialQuantity: number) {
+export async function editStock(stockId: string, quantity: number, initialQuantity: number) {
   const res = await fetch(`/api/stock`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -48,8 +50,8 @@ export async function deleteStock(id: string): Promise<{ message: string }> {
 }
 
 export async function resetStock(): Promise<{ message: string }> {
-  const res = await fetch("/api/stock/reset", {
-    method: "DELETE",
+  const res = await fetch("/api/stock", {
+    method: "PUT",
   });
   if (!res.ok) throw new Error("Failed to reset stocks");
   return res.json();

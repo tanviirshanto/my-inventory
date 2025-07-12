@@ -4,20 +4,14 @@ import Link from "next/link";
 
 export default function StockManagementPage() {
   return (
-    <main className="max-w-5xl mx-auto p-4">
-      <div className="flex justify-between my-10 items-center">
-        <h1 className="text-2xl font-bold">Manage Stocks</h1>
-        <Link href="/product" className="text-blue-500 hover:text-blue-700 cursor-pointer">
-          All Products
-        </Link>
-      </div>
-      <div className="flex gap-5">
-        <div className="flex-1">
-          <StockForm />
+     <main className="max-w-5xl mx-auto px-4 py-6">
+      
+      <div className="flex justify-between items-baseline"><h1 className="text-2xl font-bold ">Manage Stock Entries</h1>
+      <Link href="/product">View all products</Link>
         </div>
-        <div className="flex-1">
-          <StockList />
-        </div>
+      <div className="flex flex-col gap-10">
+        <StockForm />
+        <StockList />
       </div>
     </main>
   );

@@ -3,6 +3,7 @@ import { connectDB } from "@/connectDB/connectDB";
 import Product from "@/models/productModel";
 import { NextResponse } from "next/server";
 
+
 // Get All Products
 export async function GET() {
   try {

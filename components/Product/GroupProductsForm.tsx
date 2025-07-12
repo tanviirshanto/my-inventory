@@ -1,15 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
+
 import {
   fetchColors,
   fetchHeights,
   fetchParties,
   fetchThicknesses,
 } from "@/lib/productActions";
-import { addGroupedProducts, GroupedProductForm } from "@/lib/productGroupedActions";
+import {
+  addGroupedProducts,
+  GroupedProductForm,
+} from "@/lib/productGroupedActions";
+
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 type Option = { _id: string; name: string; type?: string };
 
@@ -23,7 +39,7 @@ export default function GroupedProductsForm() {
   const {
     register,
     handleSubmit,
-    control,
+    setValue,
     reset,
     watch,
     formState: { errors },
@@ -54,6 +70,18 @@ export default function GroupedProductsForm() {
     loadOptions();
   }, []);
 
+  const handleMultiCheck = (
+    field: "heights" | "colors",
+    value: string,
+    checked: boolean
+  ) => {
+    const current = watch(field) || [];
+    const updated = checked
+      ? [...current, value]
+      : current.filter((v: string) => v !== value);
+    setValue(field, updated);
+  };
+
   const onSubmit = async (data: GroupedProductForm) => {
     if (!data.heights.length || !data.colors.length) {
       toast.error("Select at least one height and color");
@@ -72,90 +100,148 @@ export default function GroupedProductsForm() {
   };
 
   return (
-    <div className="max-w-xl mx-auto space-y-6">
-      <h2 className="text-2xl font-semibold">Add Grouped Products</h2>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <select {...register("thickness", { required: true })} className="w-full border rounded px-3 py-2">
-          <option value="">Select Thickness</option>
-          {thicknesses.map((t) => (
-            <option key={t._id} value={t.name}>
-              {t.name}
-            </option>
-          ))}
-        </select>
-        {errors.thickness && <p className="text-red-600 text-sm">Thickness is required</p>}
-
-        <select {...register("party", { required: true })} className="w-full border rounded px-3 py-2">
-          <option value="">Select Party</option>
-          {parties.map((p) => (
-            <option key={p._id} value={p._id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-        {errors.party && <p className="text-red-600 text-sm">Party is required</p>}
-
-        <input
-          type="number"
-          placeholder="Buying Price"
-          {...register("buyingPrice", { required: true, min: 1 })}
-          className="w-full border rounded px-3 py-2"
-        />
-        {errors.buyingPrice && <p className="text-red-600 text-sm">Buying price must be at least 1</p>}
-
-        <fieldset className="border p-3 rounded">
-          <legend className="font-semibold">Select Heights</legend>
-          <div className="flex flex-wrap gap-4">
-            {heights.map((h) => (
-              <label key={h._id} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  value={h.name}
-                  {...register("heights")}
-                />
-                {h.name}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-
-        <fieldset className="border p-3 rounded">
-          <legend className="font-semibold">Select Colors</legend>
-          <div className="flex flex-wrap gap-4">
-            {colors.map((c) => (
-              <label key={c._id} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  value={c.name}
-                  {...register("colors")}
-                />
-                {c.name}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-
-        {/* Preview Summary */}
-        {(watchAll.thickness && watchAll.party && watchAll.buyingPrice && watchAll.heights.length && watchAll.colors.length) ? (
-          <div className="bg-gray-50 p-3 rounded border text-sm">
-            <h4 className="font-semibold mb-2">Preview</h4>
-            <p><strong>Thickness:</strong> {watchAll.thickness}</p>
-            <p><strong>Party ID:</strong> {watchAll.party}</p>
-            <p><strong>Buying Price:</strong> {watchAll.buyingPrice}</p>
-            <p><strong>Heights:</strong> {watchAll.heights.join(", ")}</p>
-            <p><strong>Colors:</strong> {watchAll.colors.join(", ")}</p>
-            <p className="mt-2 font-medium">Total Variations: {watchAll.heights.length * watchAll.colors.length}</p>
-          </div>
-        ) : null}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="w-full max-w-4xl mx-auto grid grid-cols-3 gap-x-4 gap-y-5 items-start"
+      style={{ minWidth: 320 }}
+    >
+      {/* Row 1: Thickness, Party, Buying Price */}
+      <div className="flex flex-col">
+        <Label className="mb-1 text-sm font-medium">Thickness</Label>
+        <Select
+          value={watch("thickness")}
+          onValueChange={(val) => setValue("thickness", val)}
         >
-          {loading ? "Adding..." : "Add Products"}
-        </button>
-      </form>
+          <SelectTrigger className="w-full min-w-[120px]">
+            <SelectValue placeholder="Select Thickness" />
+          </SelectTrigger>
+          <SelectContent>
+            {thicknesses.map((t) => (
+              <SelectItem key={t._id} value={t.name}>
+                {t.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors.thickness && (
+          <p className="text-xs text-red-600 mt-0.5">Required</p>
+        )}
+      </div>
+
+      <div className="flex flex-col">
+        <Label className="mb-1 text-sm font-medium">Party</Label>
+        <Select
+          value={watch("party")}
+          onValueChange={(val) => setValue("party", val)}
+        >
+          <SelectTrigger className="w-full min-w-[120px]">
+            <SelectValue placeholder="Select Party" />
+          </SelectTrigger>
+          <SelectContent>
+            {parties.map((p) => (
+              <SelectItem key={p._id} value={p._id}>
+                {p.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors.party && <p className="text-xs text-red-600 mt-0.5">Required</p>}
+      </div>
+
+      <div className="flex flex-col">
+        <Label className="mb-1 text-sm font-medium">Buying Price</Label>
+        <Input
+          type="number"
+          placeholder="Price"
+          {...register("buyingPrice", { required: true, min: 1 })}
+          className="w-full min-w-[120px]"
+        />
+        {errors.buyingPrice && (
+          <p className="text-xs text-red-600 mt-0.5">Must be at least 1</p>
+        )}
+      </div>
+
+      {/* Row 2: Heights and Colors side by side */}
+<div className="col-span-3 grid grid-cols-2 gap-x-4 gap-y-2">
+  <div className="flex flex-col">
+    <Label className="mb-1 text-sm font-medium">Heights</Label>
+    <div className="flex flex-wrap gap-3 max-h-28 overflow-auto">
+      {heights.map((h) => (
+        <label
+          key={h._id}
+          className="flex items-center gap-2 text-sm whitespace-nowrap"
+        >
+          <Checkbox
+            checked={watch("heights")?.includes(h.name)}
+            onCheckedChange={(checked) =>
+              handleMultiCheck("heights", h.name, !!checked)
+            }
+          />
+          {h.name}
+        </label>
+      ))}
     </div>
+  </div>
+
+  <div className="flex flex-col">
+    <Label className="mb-1 text-sm font-medium">Colors</Label>
+    <div className="flex flex-wrap gap-3 max-h-28 overflow-auto">
+      {colors.map((c) => (
+        <label
+          key={c._id}
+          className="flex items-center gap-2 text-sm whitespace-nowrap"
+        >
+          <Checkbox
+            checked={watch("colors")?.includes(c.name)}
+            onCheckedChange={(checked) =>
+              handleMultiCheck("colors", c.name, !!checked)
+            }
+          />
+          {c.name}
+        </label>
+      ))}
+    </div>
+  </div>
+</div>
+
+
+{/* Preview (col-span 2) */}
+      {watchAll.thickness &&
+        watchAll.party &&
+        watchAll.buyingPrice &&
+        watchAll.heights.length &&
+        watchAll.colors.length && (
+          <div className="col-span-3 bg-muted rounded p-3 text-xs shadow-inner max-h-32 overflow-auto flex  flex-wrap gap-5">
+            <p>
+              <strong>Thickness:</strong> {watchAll.thickness}
+            </p>
+            <p>
+              <strong>Party:</strong> {watchAll.party}
+            </p>
+            <p>
+              <strong>Price:</strong> {watchAll.buyingPrice}
+            </p>
+            <p>
+              <strong>Heights:</strong> {watchAll.heights.join(", ")}
+            </p>
+            <p>
+              <strong>Colors:</strong> {watchAll.colors.join(", ")}
+            </p>
+            <p className=" font-semibold">
+              Variations: {watchAll.heights.length * watchAll.colors.length}
+            </p>
+          </div>
+        )}
+      
+
+      {/* Submit Button (col-span 1 or 3 depending on preview) */}
+      <div className="col-span-1">
+        <Button type="submit" disabled={loading} className="w-full h-10">
+          {loading ? "Adding..." : "Add Products"}
+        </Button>
+      </div>
+
+      
+    </form>
   );
 }

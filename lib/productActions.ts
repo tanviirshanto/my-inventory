@@ -64,3 +64,12 @@ export async function fetchParties(): Promise<{ _id: string; name: string }[]> {
   return json.data; // Return the array only
 }
 
+// /lib/productActions.ts
+export async function updateProduct(id: string, updatedData: any) {
+  const res = await fetch(`/api/product/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updatedData),
+  });
+  if (!res.ok) throw new Error("Failed to update product");
+}

@@ -1,28 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   deleteParty,
   editParty,
   fetchParties,
   resetParties,
 } from "@/lib/partyActions";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 
 export default function PartyList() {
   const [parties, setParties] = useState<any[]>([]);
   const [filter, setFilter] = useState<"ALL" | "CUSTOMER" | "SUPPLIER">("ALL");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    address: "",
-  });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", address: "" });
 
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [search, setSearch] = useState("");
 
   const loadParties = async () => {
     try {
@@ -36,14 +43,14 @@ export default function PartyList() {
 
   useEffect(() => {
     loadParties();
-  }, [filter,page,parties]);
+  }, [filter, page]);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
+    const delay = setTimeout(() => {
       setPage(1);
       loadParties();
     }, 300);
-    return () => clearTimeout(timeout);
+    return () => clearTimeout(delay);
   }, [search]);
 
   const handleEdit = (party: any) => {
@@ -57,156 +64,153 @@ export default function PartyList() {
   };
 
   const handleSave = async () => {
-    if (!editingId) return;
-
     try {
+      if (!editingId) return;
       await editParty(editingId, form);
-      toast.success("Updated");
+      toast.success("Updated successfully");
       setEditingId(null);
       loadParties();
     } catch {
-      toast.error("Update failed");
+      toast.error("Failed to update");
     }
   };
 
   const handleReset = async () => {
-    if (confirm("Are you sure?")) {
+    if (confirm("Reset all parties?")) {
       await resetParties();
       loadParties();
     }
   };
 
   return (
-    <div>
-      <div className="flex gap-2 mb-2">
-        <input
-          type="text"
-          placeholder="Search by name..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="border px-2 py-1 rounded text-sm w-full"
-        />
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value as any)}
-          className="border px-2 py-1 rounded text-sm"
-        >
-          <option value="ALL">All</option>
-          <option value="CUSTOMER">Customers</option>
-          <option value="SUPPLIER">Suppliers</option>
-        </select>
-        <button
-          onClick={handleReset}
-          className="text-red-600 text-sm hover:underline"
-        >
-          Reset All
-        </button>
-      </div>
+    <Card className="w-full max-w-4xl mx-auto">
+      <CardHeader className="space-y-2">
+        <div className="flex gap-2 items-center">
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search party name..."
+            className="flex-1"
+          />
+          <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Filter by type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All</SelectItem>
+              <SelectItem value="CUSTOMER">Customers</SelectItem>
+              <SelectItem value="SUPPLIER">Suppliers</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="destructive" onClick={handleReset}>
+            Reset All
+          </Button>
+        </div>
+      </CardHeader>
 
-      {parties.length === 0 ? (
-        <p className="text-gray-500">No parties found.</p>
-      ) : (
-        <ul className="space-y-2">
-          {parties.map((party) => (
-            <li key={party._id} className="border rounded p-2">
+      <CardContent className="space-y-4">
+        {parties.length === 0 ? (
+          <p className="text-muted-foreground text-center">No parties found.</p>
+        ) : (
+          parties.map((party) => (
+            <div
+              key={party._id}
+              className="border rounded-md p-4 flex justify-between items-start"
+            >
               {editingId === party._id ? (
-                <div className="space-y-1">
-                  <input
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 w-full">
+                  <Input
                     value={form.name}
-                    onChange={(e) =>
-                      setForm({ ...form, name: e.target.value })
-                    }
-                    className="border w-full px-2 py-1 rounded"
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="Name"
                   />
-                  <input
+                  <Input
                     value={form.phone}
-                    onChange={(e) =>
-                      setForm({ ...form, phone: e.target.value })
-                    }
-                    className="border w-full px-2 py-1 rounded"
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    placeholder="Phone"
                   />
-                  <input
+                  <Input
                     value={form.email}
-                    onChange={(e) =>
-                      setForm({ ...form, email: e.target.value })
-                    }
-                    className="border w-full px-2 py-1 rounded"
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    placeholder="Email"
                   />
-                  <input
+                  <Input
                     value={form.address}
-                    onChange={(e) =>
-                      setForm({ ...form, address: e.target.value })
-                    }
-                    className="border w-full px-2 py-1 rounded"
+                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                    placeholder="Address"
                   />
-                  <button
-                    onClick={handleSave}
-                    className="text-green-600 text-sm mr-2"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => setEditingId(null)}
-                    className="text-gray-500 text-sm"
-                  >
-                    Cancel
-                  </button>
+                  <div className="flex gap-2 mt-2">
+                    <Button onClick={handleSave} size="sm">Save</Button>
+                    <Button
+                      onClick={() => setEditingId(null)}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
                 </div>
               ) : (
-                <div className="flex justify-between items-start">
-                  <div>
+                <div className="flex flex-col gap-1 w-full">
+                  <div className="flex justify-between items-center w-full">
                     <p className="font-semibold">
-                      {party.name} ({party.type})
+                      {party.name}{" "}
+                      <span className="text-xs text-muted-foreground">({party.type})</span>
                     </p>
-                    <p className="text-sm text-gray-700">
-                      {party.phone} | {party.email}
-                    </p>
-                    <p className="text-sm text-gray-600">{party.address}</p>
+                    <div className="flex gap-2">
+                      <Link href={`/payments/party/${party._id}`}>
+                        <Button size="sm" variant="outline">Payments</Button>
+                      </Link>
+                      <Button variant="ghost" size="sm" onClick={() => handleEdit(party)}>
+                        Edit
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={async () => {
+                          await deleteParty(party._id);
+                          toast.success("Deleted");
+                          loadParties();
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-2 text-sm mt-1">
-                    <button
-                      onClick={() => handleEdit(party)}
-                      className="text-blue-600 hover:underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={async () => {
-                        await deleteParty(party._id);
-                        toast.success("Deleted");
-                        loadParties();
-                      }}
-                      className="text-red-600 hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    📞 {party.phone} | 📧 {party.email}
+                  </p>
+                  <p className="text-sm text-muted-foreground">📍 {party.address}</p>
                 </div>
               )}
-            </li>
-          ))}
-        </ul>
-      )}
+            </div>
+          ))
+        )}
 
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-4">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-          >
-            Prev
-          </button>
-          <span className="px-3 py-1 text-sm">{page} / {totalPages}</span>
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
-      )}
-    </div>
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page === 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Prev
+            </Button>
+            <span className="text-sm">
+              Page <strong>{page}</strong> of <strong>{totalPages}</strong>
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

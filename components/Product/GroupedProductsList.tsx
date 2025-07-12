@@ -1,18 +1,30 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   fetchGroupedProducts,
   updateGroupedPrice,
-  ProductGroup,
   deleteGroupedProducts,
+  ProductGroup,
 } from "@/lib/productGroupedActions";
-import { useEffect, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import toast from "react-hot-toast";
 
 export default function GroupedProductsList() {
   const [groups, setGroups] = useState<ProductGroup[]>([]);
+  const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newPrice, setNewPrice] = useState<number | null>(null);
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -28,12 +40,6 @@ export default function GroupedProductsList() {
     load();
   }, []);
 
-  const totalPages = Math.ceil(groups.length / itemsPerPage);
-  const paginatedGroups = groups.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
   const handleSave = async (group: ProductGroup) => {
     if (newPrice === null || isNaN(newPrice)) {
       toast.error("Enter valid price");
@@ -43,11 +49,13 @@ export default function GroupedProductsList() {
     try {
       await updateGroupedPrice(group.products, newPrice);
       toast.success("Price updated");
+
       setGroups((prev) =>
         prev.map((g) =>
           g.products === group.products ? { ...g, buyingPrice: newPrice } : g
         )
       );
+
       setEditingId(null);
       setNewPrice(null);
     } catch {
@@ -62,7 +70,6 @@ export default function GroupedProductsList() {
     try {
       await deleteGroupedProducts(group.products);
       toast.success("Group deleted");
-
       setGroups((prev) =>
         prev.filter(
           (g) =>
@@ -74,112 +81,137 @@ export default function GroupedProductsList() {
     }
   };
 
-  return (
-    <div className="max-w-xl mx-auto mt-6">
-      <h2 className="text-2xl font-semibold mb-6">Grouped Products</h2>
+  const filteredGroups = groups.filter((group) => {
+    const term = search.toLowerCase();
+    return (
+      group.thickness.toLowerCase().includes(term) ||
+      group.party.name.toLowerCase().includes(term)
+    );
+  });
 
-      {groups.length === 0 ? (
-        <p className="text-gray-500 text-center">No groups found.</p>
+  const totalPages = Math.ceil(filteredGroups.length / itemsPerPage);
+  const paginatedGroups = filteredGroups.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  return (
+    <div className="max-w-6xl mx-auto py-10 space-y-6">
+      <h2 className="text-2xl font-semibold">Grouped Products</h2>
+
+      <Input
+        placeholder="Search by thickness or party"
+        value={search}
+        onChange={(e) => {
+          setSearch(e.target.value);
+          setCurrentPage(1);
+        }}
+        className="max-w-sm"
+      />
+
+      {filteredGroups.length === 0 ? (
+        <p className="text-center text-muted-foreground mt-4">
+          No matching groups found.
+        </p>
       ) : (
         <>
-          <table className="w-full border border-gray-300 text-center text-sm rounded overflow-hidden">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="px-4 py-2 border">Thickness</th>
-                <th className="px-4 py-2 border">Party</th>
-                <th className="px-4 py-2 border">Buying Price</th>
-                <th className="px-4 py-2 border">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Thickness</TableHead>
+                <TableHead>Party</TableHead>
+                <TableHead>Buying Price</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {paginatedGroups.map((group) => {
                 const rowId = group.party._id + group.thickness;
+
                 return (
-                  <tr key={rowId} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 border">{group.thickness}</td>
-                    <td className="px-4 py-2 border">{group.party.name}</td>
-                    <td className="px-4 py-2 border">
+                  <TableRow key={rowId}>
+                    <TableCell>{group.thickness}</TableCell>
+                    <TableCell>{group.party.name}</TableCell>
+                    <TableCell>
                       {editingId === rowId ? (
-                        <input
+                        <Input
                           type="number"
                           value={newPrice ?? group.buyingPrice}
                           onChange={(e) =>
                             setNewPrice(Number(e.target.value))
                           }
-                          className="w-full border rounded px-2 py-1"
                         />
                       ) : (
                         group.buyingPrice
                       )}
-                    </td>
-                    <td className="px-4 py-2 border">
+                    </TableCell>
+                    <TableCell className="space-x-2">
                       {editingId === rowId ? (
-                        <button
-                          className="text-green-600 hover:underline"
+                        <Button
+                          size="sm"
                           onClick={() => handleSave(group)}
+                          className="bg-green-600 hover:bg-green-700"
                         >
                           Save
-                        </button>
+                        </Button>
                       ) : (
                         <>
-                          <button
-                            className="text-blue-600 hover:underline"
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => {
                               setEditingId(rowId);
                               setNewPrice(group.buyingPrice);
                             }}
                           >
                             Edit
-                          </button>
-                          <button
-                            className="text-red-600 ml-2 hover:underline"
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
                             onClick={() => handleDelete(group)}
                           >
                             Delete
-                          </button>
+                          </Button>
                         </>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
 
-          {/* Pagination controls */}
-          <div className="mt-6 flex justify-center items-center gap-2 flex-wrap">
-            <button
-              className="px-3 py-1 border rounded disabled:opacity-50"
+          {/* Pagination */}
+          <div className="flex justify-center items-center gap-2 flex-wrap mt-6">
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setCurrentPage((prev) => prev - 1)}
               disabled={currentPage === 1}
             >
               Prev
-            </button>
+            </Button>
 
-            {[...Array(totalPages)].map((_, index) => {
-              const page = index + 1;
-              return (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`px-3 py-1 border rounded ${
-                    currentPage === page
-                      ? "bg-blue-600 text-white"
-                      : "hover:bg-gray-100"
-                  }`}
-                >
-                  {page}
-                </button>
-              );
-            })}
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <Button
+                key={page}
+                variant={page === currentPage ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCurrentPage(page)}
+              >
+                {page}
+              </Button>
+            ))}
 
-            <button
-              className="px-3 py-1 border rounded disabled:opacity-50"
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setCurrentPage((prev) => prev + 1)}
               disabled={currentPage === totalPages}
             >
               Next
-            </button>
+            </Button>
           </div>
         </>
       )}

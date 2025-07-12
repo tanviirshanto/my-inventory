@@ -1,6 +1,6 @@
-// app/api/product/delete/[id]/route.ts
 import { connectDB } from "@/connectDB/connectDB";
 import Product from "@/models/productModel";
+import { Stock } from "@/models/stockModel";
 
 export async function DELETE(
   _: Request,
@@ -9,13 +9,17 @@ export async function DELETE(
   try {
     await connectDB();
 
-    const deleted = await Product.findByIdAndDelete(params.id);
+    const deletedProduct = await Product.findByIdAndDelete(params.id);
 
-    if (!deleted) return new Response("Product not found", { status: 404 });
+    if (!deletedProduct)
+      return new Response("Product not found", { status: 404 });
 
-    return new Response("Product deleted successfully", { status: 200 });
+    // Delete associated stock
+    await Stock.findOneAndDelete({ product: deletedProduct._id });
+
+    return new Response("Product and stock deleted successfully", { status: 200 });
   } catch (error: unknown) {
-    console.error("Failed to delete product:", error);
+    console.error("Failed to delete product and stock:", error);
     return new Response("Something went wrong", { status: 500 });
   }
 }

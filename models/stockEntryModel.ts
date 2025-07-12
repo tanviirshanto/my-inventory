@@ -11,6 +11,10 @@ const stockEntrySchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    party: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Party',
+    },
     type: {
       type: String,
       enum: ['IN', 'OUT'], // IN for incoming stock, OUT for usage
@@ -23,6 +27,11 @@ const stockEntrySchema = new mongoose.Schema(
     note: {
       type: String,
     },
+    itemTotal:{
+      type: Number,
+      required: true,
+      default: 0, 
+    }
   },
   {
     timestamps: true,

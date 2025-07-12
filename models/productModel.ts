@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import Party from "@/models/partyModel";
+
 
 const productSchema = new mongoose.Schema(
   {
